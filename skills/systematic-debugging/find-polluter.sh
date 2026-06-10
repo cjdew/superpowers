@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Bisection script to find which test creates unwanted files/state
-# Usage: ./find-polluter.sh <file_or_dir_to_check> <test_pattern>
-# Example: ./find-polluter.sh '.git' 'src/**/*.test.ts'
+# Usage: ./find-polluter.sh <file_or_dir_to_check> <test_name_pattern>
+# Example: ./find-polluter.sh '.git' '*.test.ts'
 
 set -e
 
 if [ $# -ne 2 ]; then
-  echo "Usage: $0 <file_to_check> <test_pattern>"
-  echo "Example: $0 '.git' 'src/**/*.test.ts'"
+  echo "Usage: $0 <file_to_check> <test_name_pattern>"
+  echo "Example: $0 '.git' '*.test.ts'"
   exit 1
 fi
 
@@ -18,9 +18,16 @@ echo "🔍 Searching for test that creates: $POLLUTION_CHECK"
 echo "Test pattern: $TEST_PATTERN"
 echo ""
 
-# Get list of test files
-TEST_FILES=$(find . -path "$TEST_PATTERN" | sort)
-TOTAL=$(echo "$TEST_FILES" | wc -l | tr -d ' ')
+# Get list of test files (-name, not -path: find emits paths prefixed
+# with ./, so '-path src/**/*.test.ts' matches nothing and the script
+# reported "all tests clean" after running zero tests)
+TEST_FILES=$(find . -type f -name "$TEST_PATTERN" -not -path '*/node_modules/*' | sort)
+TOTAL=$(printf '%s' "$TEST_FILES" | grep -c . || true)
+
+if [ "$TOTAL" -eq 0 ]; then
+  echo "❌ Pattern '$TEST_PATTERN' matched no test files - refusing to report a clean run"
+  exit 2
+fi
 
 echo "Found $TOTAL test files"
 echo ""
