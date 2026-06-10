@@ -29,6 +29,12 @@ if [ "$TOTAL" -eq 0 ]; then
   exit 2
 fi
 
+if [ -e "$POLLUTION_CHECK" ]; then
+  echo "❌ '$POLLUTION_CHECK' already exists before any test ran - clean it up first"
+  echo "   (a pre-polluted state would skip every test and prove nothing)"
+  exit 2
+fi
+
 echo "Found $TOTAL test files"
 echo ""
 
